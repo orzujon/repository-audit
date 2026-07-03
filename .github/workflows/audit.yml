@@ -1,0 +1,27 @@
+name: Branch Protection Audit
+
+on:
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run audit
+        env:
+          GITHUB_TOKEN: ${{ secrets.AUDIT_GITHUB_TOKEN }}
+          GITHUB_ORG: ${{ secrets.AGITHUB_ORG }}
+          GITHUB_API_URL: https://api.github.com
+        run: python -m src.branch_protection_checker.main
