@@ -1,0 +1,57 @@
+[
+  {
+    "name": "good-service-1",
+    "branch": "main",
+    "requires_review": true
+  },
+  {
+    "name": "good-repository-2",
+    "branch": "main",
+    "requires_review": true
+  },
+  {
+    "name": "good-service-3",
+    "branch": "main",
+    "requires_review": true
+  },
+  {
+    "name": "good-service-4",
+    "branch": "main",
+    "requires_review": true
+  },
+  {
+    "name": "good-service-5",
+    "branch": "main",
+    "requires_review": true
+  },
+  {
+    "name": "bad-service-1",
+    "branch": "main",
+    "requires_review": false
+  },
+  {
+    "name": "bad-service-2",
+    "branch": "main",
+    "requires_review": false
+  },
+  {
+    "name": "bad-service-3",
+    "branch": "main",
+    "requires_review": false
+  },
+  {
+    "name": "remediate-test-good-1",
+    "branch": "main",
+    "requires_review": true
+  },
+  {
+    "name": "remediate-test-bad-1",
+    "branch": "main",
+    "requires_review": false
+  },
+  {
+    "name": "remediate-test-bad-2",
+    "branch": "main",
+    "requires_review": false
+  }
+]

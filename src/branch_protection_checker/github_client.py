@@ -61,3 +61,75 @@ class GitHubClient:
         required_count = review_settings.get("required_approving_review_count", 0)
 
         return required_count >= 1
+
+    def enable_branch_protection(self, repository_name, branch_name):
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Accept": "application/vnd.github+json",
+        }
+
+        url = (
+            f"{self.api_url}/repos/"
+            f"{self.org}/{repository_name}/branches/{branch_name}/protection"
+        )
+
+        payload = {
+            "required_status_checks": None,
+            "enforce_admins": False,
+            "required_pull_request_reviews": {
+                "required_approving_review_count": 1
+            },
+            "restrictions": None
+        }
+
+        response = requests.put(url, headers=headers, json=payload)
+
+        response.raise_for_status()
+
+        print(f"{'FIXED':<8} {repository_name:<25} branch protection enabled")
+
+    def disable_branch_protection(self, repository_name, branch_name):
+        headers = {
+            "Authorization": f"Bearer {self.token}",
+            "Accept": "application/vnd.github+json",
+        }
+
+        url = (
+            f"{self.api_url}/repos/"
+            f"{self.org}/{repository_name}/branches/{branch_name}/protection"
+        )
+
+        response = requests.delete(url, headers=headers)
+
+        response.raise_for_status()
+
+        print(f"RESET     {repository_name}")
+
+    def safe_requires_approved_review(self, repository_name, branch_name):
+        try:
+            requires_review = self.requires_approved_review(
+                repository_name=repository_name,
+                branch_name=branch_name,
+            )
+
+            return {
+                "success": True,
+                "requires_review": requires_review,
+                "error": None,
+            }
+
+        except requests.exceptions.HTTPError as error:
+            status_code = error.response.status_code
+
+            return {
+                "success": False,
+                "requires_review": False,
+                "error": f"HTTP {status_code}: {error.response.reason}",
+            }
+
+        except Exception as error:
+            return {
+                "success": False,
+                "requires_review": False,
+                "error": str(error),
+            }
