@@ -1,54 +1,76 @@
 # Branch Protection Checker
 
-A small Python audit tool that checks whether repositories in a GitHub organisation require an approved pull request review before merging.
+A Python tool to audit and optionally fix GitHub repository branch protection.
 
-The script reports each repository as:
+It checks whether each repository requires at least one approved pull request review before merging.
 
-```text
-PASS     Approved review is required
-FAIL     Approved review is not required
-SKIPPED  Repository is excluded
+## What it does
+
+* Lists repositories in a GitHub organisation.
+* Checks branch protection on the default branch.
+* Reports repositories as `PASS`, `FAIL`, `SKIPPED`, or `ERROR`.
+* Can fix non-compliant repositories.
+* Takes a snapshot before fixing.
+* Can reset repositories back to their previous state using the snapshot.
+
+## Modes
+
+### Audit
+
+Read-only check.
+
+```bash
+python -m src.branch_protection_checker.main --mode audit
 ```
 
-## What it checks
-
-For every repository in the configured GitHub organisation, the tool:
-
-* Lists all repositories in the organisation
-* Checks the default branch for branch protection
-* Verifies whether at least one approved review is required before merging
-* Skips repositories in the exclusion list
-* Prints a clear audit result to the console
-
-This tool is read-only. It does not change repository settings.
-
-## Project structure
+Example:
 
 ```text
-branch-protection-checker/
-├── src/
-│   └── branch_protection_checker/
-│       ├── checker.py
-│       ├── github_client.py
-│       └── main.py
-├── tests/
-│   ├── test_checker.py
-│   └── test_github_client.py
-├── .env.example
-├── .gitignore
-├── pytest.ini
-├── requirements.txt
-└── README.md
+PASS     good-service-1            approved review is required
+FAIL     bad-service-1             approved review is not required
+SKIPPED  config                    repository is excluded
+ERROR    private-repo              HTTP 403: Forbidden
+```
+
+### Fix
+
+Fixes repositories that do not require approved reviews.
+
+```bash
+python -m src.branch_protection_checker.main --mode fix
+```
+
+This will:
+
+* Check all repositories.
+* Save current state to `branch_protection_snapshot.json`.
+* Enable branch protection only where review approval is missing.
+* Skip excluded repositories.
+
+Example:
+
+```text
+FIXED    bad-service-1             branch protection enabled
+FIXED    bad-service-2             branch protection enabled
+ERROR    private-repo              HTTP 403: Forbidden
+Snapshot saved to branch_protection_snapshot.json
+```
+
+### Reset
+
+Restores repositories back to the state saved in the snapshot.
+
+```bash
+python -m src.branch_protection_checker.main --mode reset
+```
+
+This uses:
+
+```text
+branch_protection_snapshot.json
 ```
 
 ## Setup
-
-Clone the repository:
-
-```bash
-git clone <your-repo-url>
-cd branch-protection-checker
-```
 
 Create a virtual environment:
 
@@ -64,12 +86,6 @@ Windows PowerShell:
 .\.venv\Scripts\Activate.ps1
 ```
 
-Mac/Linux:
-
-```bash
-source .venv/bin/activate
-```
-
 Install dependencies:
 
 ```bash
@@ -78,65 +94,47 @@ pip install -r requirements.txt
 
 ## Configuration
 
-Create a `.env` file from the example:
-
-```bash
-cp .env.example .env
-```
-
-On Windows PowerShell:
-
-```powershell
-copy .env.example .env
-```
-
-Update `.env`:
+Create a `.env` file:
 
 ```env
-GITHUB_TOKEN=your_github_token_here
-GITHUB_ORG=your_github_org_here
+GITHUB_TOKEN=your_github_token
+GITHUB_ORG=your_github_org
 GITHUB_API_URL=https://api.github.com
 ```
 
-For GitHub Enterprise, update the API URL, for example:
+For GitHub Enterprise:
 
 ```env
 GITHUB_API_URL=https://your-github-enterprise-url/api/v3
 ```
 
+## Token permissions
+
+For audit only:
+
+```text
+Administration: Read-only
+Metadata: Read-only
+Contents: Read-only
+```
+
+For fix/reset:
+
+```text
+Administration: Read and write
+Metadata: Read-only
+Contents: Read-only
+```
+
 ## Exclusions
 
-Repositories can be excluded from the audit.
-
-Example:
+Update excluded repositories in `main.py`:
 
 ```python
-EXCLUDED_REPOS = {
-    "config",
-    "config-test",
-}
+EXCLUDED_REPOS = {"config", "config-test"}
 ```
 
-Excluded repositories return:
-
-```text
-SKIPPED
-```
-
-## Run the audit
-
-```bash
-python -m src.branch_protection_checker.main
-```
-
-Example output:
-
-```text
-PASS     good-service-1       approved review is required
-PASS     good-service-2       approved review is required
-FAIL     bad-service-1        approved review is not required
-SKIPPED  config               repository is excluded
-```
+Excluded repositories are never fixed.
 
 ## Run tests
 
@@ -144,99 +142,13 @@ SKIPPED  config               repository is excluded
 pytest
 ```
 
-Expected result:
-
-```text
-5 passed
-```
-
-## How it works
-
-```text
-main.py
-  ↓
-GitHubClient
-  ↓
-GitHub REST API
-  ↓
-requires_approved_review()
-  ↓
-checker.py
-  ↓
-PASS / FAIL / SKIPPED
-  ↓
-Console output
-```
-
-## Responsibilities
-
-### `main.py`
-
-Application entry point.
-
-It connects everything together:
-
-* Loads repositories
-* Checks each repository
-* Prints the result
-
-### `github_client.py`
-
-Handles GitHub communication.
-
-It:
-
-* Lists repositories in the organisation
-* Reads branch protection settings
-* Converts GitHub protection data into `True` or `False`
-
-### `checker.py`
-
-Contains the core business logic.
-
-It decides whether a repository should be:
-
-* `PASS`
-* `FAIL`
-* `SKIPPED`
-
-### `tests/`
-
-Contains unit tests for the checker and GitHub client logic.
-
-The tests do not call the real GitHub API.
-
-## GitHub token permissions
-
-The token should have read-only access where possible.
-
-Recommended fine-grained token permissions:
-
-```text
-Repository access: selected repositories
-Administration: read-only
-Contents: read-only
-Metadata: read-only
-```
-
-Do not commit your `.env` file.
-
 ## Notes
 
-This script checks classic branch protection rules using the GitHub REST API endpoint for branch protection.
+* This tool uses classic GitHub branch protection rules.
+* It does not currently check GitHub Rulesets.
+* `.env` should never be committed.
+* `branch_protection_snapshot.json` is used for rollback after fix mode.
 
-It does not currently check GitHub Rulesets.
-
-## Future improvements
-
-Possible next steps:
-
-* Add CSV or JSON report output
-* Support GitHub Rulesets
-* Add GitHub Actions workflow
-* Move exclusions into `.env`
-* Add better error handling and logging
-* Add summary totals for PASS / FAIL / SKIPPED
 
 
 <img width="1536" height="1024" alt="Application Login with REST API" src="https://github.com/user-attachments/assets/62fc9e88-7cad-4c09-80b2-fb8f32ac6fcc" />
