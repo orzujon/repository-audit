@@ -1,0 +1,9 @@
+model: gpt-4o
+weak-model: gpt-4o-mini
+
+map-tokens: 4096
+
+auto-commits: false
+dirty-commits: false
+
+show-diffs: true
