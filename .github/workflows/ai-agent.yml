@@ -36,7 +36,7 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          aider \
+          aider README.md \
             --yes \
             --message "${{ inputs.prompt }}"
 
