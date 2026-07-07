@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       prompt:
-        description: "What should the AI agent change?"
+        description: "Change eequest"
         required: true
         type: string
 
