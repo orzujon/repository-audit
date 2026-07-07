@@ -1,0 +1,56 @@
+name: AI Agent Safe Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "What should the AI agent change?"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  ai-agent:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout dev
+        uses: actions/checkout@v4
+        with:
+          ref: dev
+
+      - name: Create AI branch
+        run: |
+          BRANCH="ai/change-${{ github.run_id }}"
+          git checkout -b "$BRANCH"
+          echo "BRANCH=$BRANCH" >> $GITHUB_ENV
+
+      - name: Show prompt
+        run: |
+          echo "Agent prompt:"
+          echo "${{ inputs.prompt }}"
+
+      - name: Commit changes
+        run: |
+          git config user.name "ai-agent"
+          git config user.email "ai-agent@example.com"
+          git status
+          git add .
+          git diff --cached --quiet || git commit -m "AI proposed change"
+
+      - name: Push branch
+        run: |
+          git push origin "$BRANCH"
+
+      - name: Create PR into dev
+        run: |
+          gh pr create \
+            --base dev \
+            --head "$BRANCH" \
+            --title "AI proposed change" \
+            --body "Prompt: ${{ inputs.prompt }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
