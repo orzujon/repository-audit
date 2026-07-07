@@ -28,11 +28,17 @@ jobs:
           git checkout -b "$BRANCH"
           echo "BRANCH=$BRANCH" >> $GITHUB_ENV
 
-      - name: Make test change
+      - name: Install AI Agent
         run: |
-          echo "" >> README.md
-          echo "## AI Agent Test" >> README.md
-          echo "${{ inputs.prompt }}" >> README.md
+          pip install aider-chat
+
+      - name: Run AI Agent
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          aider \
+            --yes \
+            --message "${{ inputs.prompt }}"
 
       - name: Commit changes
         run: |
