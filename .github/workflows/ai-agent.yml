@@ -28,10 +28,11 @@ jobs:
           git checkout -b "$BRANCH"
           echo "BRANCH=$BRANCH" >> $GITHUB_ENV
 
-      - name: Show prompt
+      - name: Make test change
         run: |
-          echo "Agent prompt:"
-          echo "${{ inputs.prompt }}"
+          echo "" >> README.md
+          echo "## AI Agent Test" >> README.md
+          echo "${{ inputs.prompt }}" >> README.md
 
       - name: Commit changes
         run: |
