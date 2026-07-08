@@ -1,0 +1,41 @@
+resources:
+- name: repository-audit
+  type: git
+  source:
+    uri: https://github.com/orzujon/repository-audit.git
+    branch: main
+    username: ((github_username))
+    password: ((github_token))
+
+jobs:
+- name: audit-github-repositories
+  plan:
+  - get: repository-audit
+    trigger: true
+
+  - task: run-tests-and-audit
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: python
+          tag: "3.12"
+
+      inputs:
+      - name: repository-audit
+
+      params:
+        GITHUB_TOKEN: ((audit_github_token))
+        GITHUB_ORG: ((github_org))
+        GITHUB_API_URL: https://api.github.com
+
+      run:
+        path: sh
+        args:
+        - -exc
+        - |
+          cd repository-audit
+          pip install -r requirements.txt
+          pytest
+          python -m src.branch_protection_checker.main --mode audit
